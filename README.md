@@ -36,18 +36,33 @@ We were going to make a website that incorporates machine learning to: classify 
 
 We plan on having two groups one coding the front end(the website) one coding the vision model then our last step will be connecting them. So we shall have two timelines, one for the front end and one for the back end.
 
-*Our timeline*
+**Our timeline**
 
-*Front end(November 13th just in time to show for the project update)*
-- Design the interface of the website. What it will look like, what options we give the user.
-- Give the website access to the camera
+**Front end**
+*Starting after break and until Nov 13th Status update*
+- Design the user interface for website, defining what options the user will have.
+- Begin implementing the front-end using your chosen framework.
+- Add basic elements to capture user inputs and access the camera.
+*After Nov 13th Status update*
+- Complete the camera integration, allowing the website to capture images or video from the user's camera.
+- Work on front-end functionality, such as buttons for capturing images and sending them to the backend for processing.
+- Set up the backend web API using Actix
+- Build initial endpoints for the backend that will eventually handle the classification requests.
+- debug and refine!!!
 
-*Back end working simultaneously with front end(November 30th)*
-
-- Install Open cv
-- Build and train an Image Classifier to identify objects(November 20)
-- Incorporate the model into the website with an API (December 7th)
-- Write our presentation and final report (December 10th)
+**Back end working simultaneously with front end**
+*Starting after break until Nov 13th Status update*
+- Install OpenCV and learn to manipulate images and video.
+- Learn basic OpenCV operations 
+- Start experimenting with model.
+- Continue refining the front-end and ensure that images captured via the camera are properly sent to the backend.
+*After Nov 13th Status Update*
+- Figure out what ML framework to use
+- Ensure that the pre-trained/trained model can process images and return predictions.
+- Test the model locally to confirm it works with input images/video feed
+- Integrate the trained AI model into the backend API.
+- Build final API route that accepts the camera image from the front-end and returns classification results.
+- Refine and think of more features!!
 
 *Done* : ) 
 
