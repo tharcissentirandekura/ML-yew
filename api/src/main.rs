@@ -3,7 +3,7 @@
 mod api;
 
 use api::db::connect_db;
-use api::upload::init_routes;
+use api::handlers::init_routes;
 
 use actix_web::{middleware::Logger, App, HttpServer};
 

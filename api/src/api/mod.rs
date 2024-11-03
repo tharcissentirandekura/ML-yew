@@ -1,2 +1,2 @@
 pub mod db;
-pub mod upload;
+pub mod handlers;
