@@ -1,20 +1,40 @@
+#[allow(dead_code)]
+#[allow(unused_imports)]
+mod api;
 
+use api::db::connect_db;
+use api::upload::init_routes;
 
-use actix_web::{middleware, App, HttpServer};
-// use env_logger;
-use api::config::config_app;
+use actix_web::{middleware::Logger, App, HttpServer};
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    // env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
+    // Set environment variables for logging
+    std::env::set_var("RUST_LOG", "debug,actix_web=info");
+    std::env::set_var("RUST_BACKTRACE", "1");
+    env_logger::init();
 
-    log::info!("starting HTTP server at http://localhost:8080");
+    // Connect to the database
+    match connect_db().await {
+        Ok(_) => {
+            println!("Successfully connected to the database");
+            // You can pass the database connection to your routes if needed
+        }
+        Err(e) => {
+            eprintln!("Failed to connect to database: {}", e);
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "Failed to connect to database",
+            ));
+        }
+    }
 
+    // Start the HTTP server
     HttpServer::new(|| {
-        App::new()
-            .configure(config_app) // Use the config function
-            .wrap(middleware::Logger::default())
+        let logger = Logger::default();
+        App::new().wrap(logger).configure(init_routes) // Initialize routes
     })
-    .bind(("127.0.0.1", 8080))?
+    .bind("127.0.0.1:8080")?
     .run()
     .await
 }
