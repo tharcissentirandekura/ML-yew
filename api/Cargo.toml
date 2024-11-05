@@ -17,3 +17,4 @@ derive_more = { version = "1.0", features = ["full"] }
 mongodb = "3.1.0"
 tokio = { version = "1", features = ["full"] }
 futures-util = "0.3.31"
+actix-multipart = "0.7.2"
