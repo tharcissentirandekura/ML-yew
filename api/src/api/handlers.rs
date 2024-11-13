@@ -20,6 +20,12 @@ pub struct Image {
     pub path: String, // path to the image file on the file system
 }
 
+#[derive(Serialize)]
+struct ClassificationResult {
+    label: String,
+    confidence: f32,
+}
+
 
 #[derive(Deserialize)]
 pub struct UploadImage {
@@ -125,20 +131,50 @@ async fn upload_image(mut payload: Multipart) -> Result<HttpResponse, actix_web:
             };
 
             // Store the image metadata (name and path) in MongoDB
-            println!("Image saved successfully,{:#?}", image);
+            println!("Image saved successfully, {:#?}", image);
             match save_image(&image, &db).await {
-                
-                Ok(_) => return Ok(HttpResponse::Ok().json("Image saved successfully")),
+                Ok(_) => println!("Image metadata saved to MongoDB."),
                 Err(e) => {
-                    eprintln!("Failed to upload image: {}", e);
+                    eprintln!("Failed to save image metadata: {}", e);
                     return Ok(HttpResponse::InternalServerError().finish());
                 }
             }
+
+            // Perform image classification (replace this with real model code)
+            let classification_result = classify_image(file_path.clone()).await?;
+
+            // Return a response with both image metadata and classification result
+            let response = serde_json::json!({
+                "message": "Image saved and classified successfully",
+                "image": {
+                    "name": image.name,
+                    "path": image.path,
+                },
+                "classification": classification_result,
+            });
+
+            return Ok(HttpResponse::Ok().json(response));
         }
     }
 
     Ok(HttpResponse::BadRequest().body("No file found in request"))
 }
+
+
+async fn classify_image(file_path: PathBuf) -> Result<ClassificationResult, actix_web::error::Error> {
+    // Here you would load the image from `file_path` and perform classification.
+    // For example, using a pre-trained model to predict the label and confidence.
+
+    // Mocked response for now
+    let result = ClassificationResult {
+        label: "example_label".to_string(),
+        confidence: 0.95,
+    };
+
+    Ok(result)
+}
+
+
 pub fn init_routes(cfg: &mut web::ServiceConfig) {
     //initialize the routes
     cfg.service(get_image); //get image route
