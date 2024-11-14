@@ -101,6 +101,7 @@ Integration with Back-End API
 Image data and data handling
 
 *Back end*
+
 Start experimenting with the model.
 We plan on using a PyTorch model and incorporating it into our backend using an unsafe block
 Continue refining the front-end and ensure that images captured via the camera are properly sent to the backend. 
