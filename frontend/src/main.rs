@@ -1,3 +1,6 @@
+use frontend;
+
 fn main(){
-    println!("Hello World");
+    frontend::run_app();
+    
 }

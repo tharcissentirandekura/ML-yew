@@ -3,6 +3,9 @@ name = "frontend"
 version = "0.1.0"
 edition = "2021"
 
+[workspace]
+members = ["api", "frontend"]
+
 
 [dependencies]
 yew = { version = "0.21.0", features = ["csr"] }
