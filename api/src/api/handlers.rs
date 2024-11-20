@@ -2,14 +2,15 @@ use super::db::connect_db;
 use actix_multipart::Multipart;
 use futures_util::{stream::StreamExt, TryStreamExt};
 use actix_web::{
-    get, post,
-    web::{self, Json, ServiceConfig},
-    HttpResponse, Responder,
+    get, post, web::{self, Json, ServiceConfig}, HttpRequest, HttpResponse, Responder, Result
 };
 use mongodb::{bson::doc, Collection, Database};
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncWriteExt, AsyncReadExt};
 use std::path::PathBuf;
+use std::io::Write;
+use actix_files::NamedFile;
+use sanitize_filename;
 
 
 
@@ -34,36 +35,7 @@ pub struct UploadImage {
 }
 #[get("/")]
 pub async  fn home() -> impl Responder {
-    let data = String::from("
-    <h1> ******************* Rustcv API *******************</h1>
-    
-    <ul>
-        <li>Get Image  <a href='http://127.0.0.1:8080/image'>/image</a></li>
-        <li>Upload Image  <a href='http://127.0.0.1:8080/upload'>/upload</a></li>
-    </ul>
-    <form action='http://127.0.0.1:8080/upload' method='post' enctype='multipart/form-data'>
-        <input type='file' name='file' />
-        <input type='submit' value='Upload' />
-    </form>
-    
-
-
-    <style>
-    body {
-        font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 0;
-        background-color: #f4f4f4;
-    }
-    li {
-        font-size: 2.2em;
-        margin: 10px;
-    }
-    </style>
-
-    "
-);
-    HttpResponse::Ok().body(data)
+    HttpResponse::Ok().json("you are viewing the home for rustclassy website ML model")
 }
 
 #[get("/image")]
@@ -73,7 +45,6 @@ pub async fn get_image() -> impl Responder {
     let filter = doc! {}; // Retrieve all images
     let cursor = collection.find(filter).await.unwrap();
     let images: Vec<Image> = cursor.try_collect().await.unwrap();
-
     if images.is_empty() {
         return HttpResponse::Ok().body("No images found");
     }
@@ -88,79 +59,66 @@ async fn save_image(image: &Image, db: &Database) -> mongodb::error::Result<()> 
 }
 
 #[post("/upload")]
-async fn upload_image(mut payload: Multipart) -> Result<HttpResponse, actix_web::error::Error> {
+async fn upload_image(mut payload: Multipart) -> Result<HttpResponse> {
     let db = connect_db().await.unwrap();
-    let mut image_name = String::new();
-    let upload_dir = "./uploads/"; // Directory to save uploaded files
+    let mut message = String::from("No file uploaded");
+    std::fs::create_dir_all("./uploads")?; // Create the directory if it doesn't exist
+    while let Some(item) = payload.next().await {
+        let mut field = item?;
+        let filename = field.content_disposition().and_then(|cd| {
+            cd.get_filename().map(|name| name.to_string())
+        }).unwrap();
+        
+        let final_file = filename.replace(" ", "_"); // rename the file to remove spaces
 
-    tokio::fs::create_dir_all(upload_dir).await?; // Create the directory if it doesn't exist
+        let sanitized_file = sanitize_filename::sanitize(&final_file); // sanitize the filename to remove special characters
+        
+        let file = format!("http://127.0.0.1:8080/view/{sanitized_file}"); // create a link to the uploaded file
 
-    // Process the multipart payload
-    while let Some(field) = payload.next().await {
-        let mut field = match field {
-            Ok(field) => field,
-            Err(e) => return Err(actix_web::error::ErrorBadRequest(e.to_string())),
+        message = file.clone();
+
+        let filepath = format!("./uploads/{}", sanitized_file); // create the file path
+
+        let mut f = web::block(|| std::fs::File::create(filepath)).await??; // create the file
+
+        while let Some(chunk) = field.next().await { // write the file data to the file
+            let data = chunk?; // get the chunk of data
+            f = web::block(move || f.write_all(&data).map(|_| f)).await??;
+        }
+
+        let image = Image {
+            id: 1, // This should be dynamically generated in a production environment
+            name: sanitized_file.clone(),
+            path : file.clone(),
         };
 
-        // Check if this is the file field
-        if field.name() == Some("file") {
-            image_name = field
-                .content_disposition()
-                .and_then(|cd| cd.get_filename())
-                .unwrap_or("image")
-                .to_string();
-            
-            let file_path = PathBuf::from(format!("{}{}", upload_dir, image_name));
-            println!("File path: {:#?}", file_path);
-
-            // Create a file at the specified path and write the field data to it
-            let mut file = tokio::fs::File::create(&file_path).await?;
-            while let Some(chunk) = field.next().await {
-                let chunk = match chunk {
-                    Ok(chunk) => chunk,
-                    Err(e) => return Err(actix_web::error::ErrorBadRequest(e.to_string())),
-                };
-                file.write_all(&chunk).await?;
+        match save_image(&image, &db).await {
+            Ok(_) => println!("Image metadata saved to MongoDB."),
+            Err(e) => {
+                eprintln!("Failed to save image metadata: {}", e);
+                return Ok(HttpResponse::InternalServerError().finish());
             }
-
-            // Save the file path in MongoDB instead of the binary data
-            let image = Image {
-                id: 1, // This should be dynamically generated in a production environment
-                name: image_name.clone(),
-                path: file_path.to_string_lossy().to_string(), // Convert the path to a String
-            };
-
-            // Store the image metadata (name and path) in MongoDB
-            println!("Image saved successfully, {:#?}", image);
-            match save_image(&image, &db).await {
-                Ok(_) => println!("Image metadata saved to MongoDB."),
-                Err(e) => {
-                    eprintln!("Failed to save image metadata: {}", e);
-                    return Ok(HttpResponse::InternalServerError().finish());
-                }
-            }
-
-            // Perform image classification (replace this with real model code)
-            let classification_result = classify_image(file_path.clone()).await?;
-
-            // Return a response with both image metadata and classification result
-            let response = serde_json::json!({
-                "message": "Image saved and classified successfully",
-                "image": {
-                    "name": image.name,
-                    "path": image.path,
-                },
-                "classification": classification_result,
-            });
-
-            return Ok(HttpResponse::Ok().json(response));
         }
+        
     }
 
-    Ok(HttpResponse::BadRequest().body("No file found in request"))
+    println!("{}", message);
+    Ok(HttpResponse::Ok().json(message))
+
 }
 
+#[get("/view/{filename}")]
+async fn view_file(req: HttpRequest) -> impl Responder {
+    let folder = "./uploads";
+    let file_name: PathBuf = req.match_info().query("filename").parse().unwrap();
+    let file_path = PathBuf::from(folder).join(file_name);
 
+    if file_path.exists() {
+        NamedFile::open(file_path).unwrap().into_response(&req)
+    } else {
+        HttpResponse::NotFound().body("File not found")
+    }
+}
 async fn classify_image(file_path: PathBuf) -> Result<ClassificationResult, actix_web::error::Error> {
     // Here you would load the image from `file_path` and perform classification.
     // For example, using a pre-trained model to predict the label and confidence.
@@ -180,5 +138,6 @@ pub fn init_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(get_image); //get image route
     cfg.service(upload_image); //upload image route
     cfg.service(home); //home route
+    cfg.service(view_file); //view file route
     //  cfg.route("/upload", web::route().to(upload_image));
 }
