@@ -1,6 +1,5 @@
 use frontend;
 
-fn main(){
+fn main() {
     frontend::run_app();
-    
 }

@@ -6,6 +6,9 @@ use web_sys::HtmlInputElement;
 use log;
 use gloo_file::{Blob, callbacks::read_as_bytes};
 
+mod component;
+use component::navbar::Navbar;
+
 #[derive(Deserialize, Clone, Debug)]
 struct ClassificationResponse {
     label: String,
@@ -38,6 +41,7 @@ fn app() -> Html {
         })
     };
 
+
     let on_submit = {
         let file_data = file_data.clone();
         let classification = classification.clone();
@@ -67,8 +71,9 @@ fn app() -> Html {
     };
 
     html! {
-        <div>
-            <h1>{ "Machine Learning Image Classifier" }</h1>
+        <div class="body fs-4">
+            <Navbar onclick={on_submit.clone()}/> // Include the Navbar component
+            <h1 class="text text-danger p-4 m-4">{ "Machine Learning Image Classifier" }</h1>
             <input
                 type="file"
                 accept="image/*"

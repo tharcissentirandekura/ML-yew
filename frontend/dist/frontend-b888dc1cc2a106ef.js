@@ -185,7 +185,7 @@ function makeClosure(arg0, arg1, dtor, f) {
     return real;
 }
 function __wbg_adapter_26(arg0, arg1, arg2) {
-    wasm.closure178_externref_shim(arg0, arg1, arg2);
+    wasm.closure216_externref_shim(arg0, arg1, arg2);
 }
 
 function makeMutClosure(arg0, arg1, dtor, f) {
@@ -213,11 +213,11 @@ function makeMutClosure(arg0, arg1, dtor, f) {
     return real;
 }
 function __wbg_adapter_29(arg0, arg1, arg2) {
-    wasm.closure245_externref_shim(arg0, arg1, arg2);
+    wasm.closure315_externref_shim(arg0, arg1, arg2);
 }
 
 function __wbg_adapter_32(arg0, arg1, arg2) {
-    wasm.closure254_externref_shim(arg0, arg1, arg2);
+    wasm.closure324_externref_shim(arg0, arg1, arg2);
 }
 
 export function run_app() {
@@ -509,20 +509,6 @@ function __wbg_get_imports() {
         const ret = arg0.host;
         return ret;
     };
-    imports.wbg.__wbg_name_21d45b925e69834e = function(arg0, arg1) {
-        const ret = arg1.name;
-        const ptr1 = passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
-        getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
-        getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
-    };
-    imports.wbg.__wbg_message_c7a4c5995cc33e84 = function(arg0, arg1) {
-        const ret = arg1.message;
-        const ptr1 = passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
-        getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
-        getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
-    };
     imports.wbg.__wbg_readyState_a04c47b436007a00 = function(arg0) {
         const ret = arg0.readyState;
         return ret;
@@ -626,6 +612,20 @@ function __wbg_get_imports() {
     imports.wbg.__wbg_removeEventListener_4740f011c11e2737 = function() { return handleError(function (arg0, arg1, arg2, arg3, arg4) {
         arg0.removeEventListener(getStringFromWasm0(arg1, arg2), arg3, arg4 !== 0);
     }, arguments) };
+    imports.wbg.__wbg_name_21d45b925e69834e = function(arg0, arg1) {
+        const ret = arg1.name;
+        const ptr1 = passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
+        getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
+    };
+    imports.wbg.__wbg_message_c7a4c5995cc33e84 = function(arg0, arg1) {
+        const ret = arg1.message;
+        const ptr1 = passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
+        getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
+    };
     imports.wbg.__wbg_get_4d667686e5e4fa4f = function(arg0, arg1) {
         const ret = arg0[arg1 >>> 0];
         return isLikeNone(ret) ? 0 : addToExternrefTable0(ret);
@@ -797,16 +797,16 @@ function __wbg_get_imports() {
         const ret = v0;
         return ret;
     };
-    imports.wbg.__wbindgen_closure_wrapper2823 = function(arg0, arg1, arg2) {
-        const ret = makeClosure(arg0, arg1, 179, __wbg_adapter_26);
+    imports.wbg.__wbindgen_closure_wrapper1893 = function(arg0, arg1, arg2) {
+        const ret = makeClosure(arg0, arg1, 217, __wbg_adapter_26);
         return ret;
     };
-    imports.wbg.__wbindgen_closure_wrapper3641 = function(arg0, arg1, arg2) {
-        const ret = makeMutClosure(arg0, arg1, 246, __wbg_adapter_29);
+    imports.wbg.__wbindgen_closure_wrapper4210 = function(arg0, arg1, arg2) {
+        const ret = makeMutClosure(arg0, arg1, 316, __wbg_adapter_29);
         return ret;
     };
-    imports.wbg.__wbindgen_closure_wrapper3769 = function(arg0, arg1, arg2) {
-        const ret = makeMutClosure(arg0, arg1, 255, __wbg_adapter_32);
+    imports.wbg.__wbindgen_closure_wrapper4344 = function(arg0, arg1, arg2) {
+        const ret = makeMutClosure(arg0, arg1, 325, __wbg_adapter_32);
         return ret;
     };
     imports.wbg.__wbindgen_init_externref_table = function() {
