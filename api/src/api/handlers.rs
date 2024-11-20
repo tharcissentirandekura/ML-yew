@@ -1,20 +1,20 @@
 use super::db::connect_db;
-use actix_multipart::Multipart;
-use futures_util::{stream::StreamExt, TryStreamExt};
-use actix_web::{
-    get, post, web::{self, Json, ServiceConfig}, HttpRequest, HttpResponse, Responder, Result
-};
-use mongodb::{bson::doc, Collection, Database};
-use serde::{Deserialize, Serialize};
-use tokio::io::{AsyncWriteExt, AsyncReadExt};
-use std::path::PathBuf;
-use std::io::Write;
 use actix_files::NamedFile;
+use actix_multipart::Multipart;
+use actix_web::{
+    get, post,
+    web::{self, Json, ServiceConfig},
+    HttpRequest, HttpResponse, Responder, Result,
+};
+use futures_util::{stream::StreamExt, TryStreamExt};
+use mongodb::{bson::doc, Collection, Database};
 use sanitize_filename;
+use serde::{Deserialize, Serialize};
+use std::io::Write;
+use std::path::PathBuf;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-
-
-#[derive(Debug,Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Image {
     pub id: i32,
     pub name: String,
@@ -27,14 +27,13 @@ struct ClassificationResult {
     confidence: f32,
 }
 
-
 #[derive(Deserialize)]
 pub struct UploadImage {
     pub name: String,
     pub data: Vec<u8>,
 }
 #[get("/")]
-pub async  fn home() -> impl Responder {
+pub async fn home() -> impl Responder {
     HttpResponse::Ok().json("you are viewing the home for rustclassy website ML model")
 }
 
@@ -65,14 +64,15 @@ async fn upload_image(mut payload: Multipart) -> Result<HttpResponse> {
     std::fs::create_dir_all("./uploads")?; // Create the directory if it doesn't exist
     while let Some(item) = payload.next().await {
         let mut field = item?;
-        let filename = field.content_disposition().and_then(|cd| {
-            cd.get_filename().map(|name| name.to_string())
-        }).unwrap();
-        
+        let filename = field
+            .content_disposition()
+            .and_then(|cd| cd.get_filename().map(|name| name.to_string()))
+            .unwrap();
+
         let final_file = filename.replace(" ", "_"); // rename the file to remove spaces
 
         let sanitized_file = sanitize_filename::sanitize(&final_file); // sanitize the filename to remove special characters
-        
+
         let file = format!("http://127.0.0.1:8080/view/{sanitized_file}"); // create a link to the uploaded file
 
         message = file.clone();
@@ -81,7 +81,8 @@ async fn upload_image(mut payload: Multipart) -> Result<HttpResponse> {
 
         let mut f = web::block(|| std::fs::File::create(filepath)).await??; // create the file
 
-        while let Some(chunk) = field.next().await { // write the file data to the file
+        while let Some(chunk) = field.next().await {
+            // write the file data to the file
             let data = chunk?; // get the chunk of data
             f = web::block(move || f.write_all(&data).map(|_| f)).await??;
         }
@@ -89,7 +90,7 @@ async fn upload_image(mut payload: Multipart) -> Result<HttpResponse> {
         let image = Image {
             id: 1, // This should be dynamically generated in a production environment
             name: sanitized_file.clone(),
-            path : file.clone(),
+            path: file.clone(),
         };
 
         match save_image(&image, &db).await {
@@ -99,12 +100,10 @@ async fn upload_image(mut payload: Multipart) -> Result<HttpResponse> {
                 return Ok(HttpResponse::InternalServerError().finish());
             }
         }
-        
     }
 
     println!("{}", message);
     Ok(HttpResponse::Ok().json(message))
-
 }
 
 #[get("/view/{filename}")]
@@ -119,7 +118,9 @@ async fn view_file(req: HttpRequest) -> impl Responder {
         HttpResponse::NotFound().body("File not found")
     }
 }
-async fn classify_image(file_path: PathBuf) -> Result<ClassificationResult, actix_web::error::Error> {
+
+#[get("/classify/{file_path}")]
+async fn classify_image(file_path: String) -> impl Responder {
     // Here you would load the image from `file_path` and perform classification.
     // For example, using a pre-trained model to predict the label and confidence.
 
@@ -129,9 +130,8 @@ async fn classify_image(file_path: PathBuf) -> Result<ClassificationResult, acti
         confidence: 0.95,
     };
 
-    Ok(result)
+    HttpResponse::Ok().json(result)
 }
-
 
 pub fn init_routes(cfg: &mut web::ServiceConfig) {
     //initialize the routes
@@ -139,5 +139,5 @@ pub fn init_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(upload_image); //upload image route
     cfg.service(home); //home route
     cfg.service(view_file); //view file route
-    //  cfg.route("/upload", web::route().to(upload_image));
+                            //  cfg.route("/upload", web::route().to(upload_image));
 }

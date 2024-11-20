@@ -34,11 +34,11 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         let logger = Logger::default();
         App::new()
-        .wrap(logger)
-        .configure(init_routes) // Initialize routes
-        // Serve static files from the /uploads directory
-        // .route("/view/{filename}", web::get().to(view_file))
-        .service(actix_files::Files::new("/uploads", "./uploads").show_files_listing())
+            .wrap(logger)
+            .configure(init_routes) // Initialize routes
+            // Serve static files from the /uploads directory
+            // .route("/view/{filename}", web::get().to(view_file))
+            .service(actix_files::Files::new("/uploads", "./uploads").show_files_listing())
     })
     .bind("127.0.0.1:8080")?
     .run()
