@@ -25,6 +25,7 @@ pub struct Image {
 struct ClassificationResult {
     label: String,
     confidence: f32,
+    path : PathBuf
 }
 
 #[derive(Deserialize)]
@@ -73,7 +74,7 @@ async fn upload_image(mut payload: Multipart) -> Result<HttpResponse> {
 
         let sanitized_file = sanitize_filename::sanitize(&final_file); // sanitize the filename to remove special characters
 
-        let file = format!("http://127.0.0.1:8080/view/{sanitized_file}"); // create a link to the uploaded file
+        let file = format!("http://127.0.0.1:8000/view/{sanitized_file}"); // create a link to the uploaded file
 
         message = file.clone();
 
@@ -120,15 +121,18 @@ async fn view_file(req: HttpRequest) -> impl Responder {
 }
 
 #[get("/classify/{file_path}")]
-async fn classify_image(file_path: String) -> impl Responder {
-    // Here you would load the image from `file_path` and perform classification.
-    // For example, using a pre-trained model to predict the label and confidence.
+async fn classify_image(req:HttpRequest) -> impl Responder {
+    let folder = "./uploads";
+    let file_name:PathBuf = req.match_info().query("file_path").parse().unwrap();
+    let file_path = PathBuf::from(folder).join(file_name);
 
-    // Mocked response for now
     let result = ClassificationResult {
         label: "example_label".to_string(),
         confidence: 0.95,
+        path:file_path.clone(),
     };
+
+    println!("Classified {:?}",file_path.clone());
 
     HttpResponse::Ok().json(result)
 }
@@ -139,5 +143,6 @@ pub fn init_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(upload_image); //upload image route
     cfg.service(home); //home route
     cfg.service(view_file); //view file route
+    cfg.service(classify_image);
                             //  cfg.route("/upload", web::route().to(upload_image));
 }

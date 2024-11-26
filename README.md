@@ -37,3 +37,14 @@ navigate to
     src/api/
     - then : cargo watch -x run -p api
     - That allow us to auto refresh our changes
+
+
+
+
+
+# For frontend 
+- we will use yew and you can check the documentation for reference to create buttons, links, images display, onclick, onsubmit,...
+- For styling our website so that it looks cool and amazing:
+        - we will use tailwind css : We can just look up the styles we want to use from its website
+- For the look of frontend 
+        - we can come up with a design that is cool.

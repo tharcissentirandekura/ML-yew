@@ -1,12 +1,11 @@
-use gloo::net::http::Request;
 use gloo_file::callbacks::FileReader;
 use gloo_file::File;
-// use gloo_net::http::{Request, Response};
+use gloo_net::http::{Request, Response};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::JsCast;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
-
+use FormData;
 #[derive(Deserialize, Serialize, Debug, Clone)]
 struct Image {
     id: i32,
@@ -28,8 +27,6 @@ enum Msg {
     ClassificationLoaded(Result<ClassificationResult, String>),
     LoadImages,
     Classify(String),
-    UploadImage(Image),
-    ImageUploaded(Result<String, String>),
 }
 
 struct App {
@@ -54,13 +51,23 @@ impl Component for App {
         match msg {
             Msg::FileSelected(file) => {
                 let file_name = file.name().clone();
-                let link = ctx.link().clone();
-
-                let reader = gloo_file::callbacks::read_as_bytes(&file, move |file_result| {
-                    let result = file_result.map(|_| "File read successfully".to_string())
-                                             .map_err(|err| err.to_string());
-                    link.send_message(Msg::FileUploaded(result));
-                });
+                let reader = {
+                    let link = ctx.link().clone();
+                    FileReader::new(file, move |file_result| {
+                        let result = file_result.map(|data| {
+                            // Create form data
+                            let mut form = FormData::new().unwrap();
+                            form.append_with_blob_and_filename(
+                                "file",
+                                &Blob::new_with_buffer(&data).unwrap(),
+                                &file_name,
+                            )
+                            .unwrap();
+                            Msg::FileUploaded(Ok(format!("File uploaded: {}", file_name)))
+                        });
+                        link.send_message(Msg::FileUploaded(result));
+                    })
+                };
                 self.file_reader = Some(reader);
                 true
             }
@@ -110,37 +117,13 @@ impl Component for App {
                     let response = Request::get("http://127.0.0.1:8000/image").send().await;
                     match response {
                         Ok(res) => {
-                            let images: Result<Vec<Image>, String> = res.json().await.map_err(|e| e.to_string());
+                            let images: Result<Vec<Image>, _> = res.json().await;
                             link.send_message(Msg::ImagesLoaded(images));
                         }
                         Err(err) => gloo::console::log!("Failed to load images:", err.to_string()),
                     }
                 });
                 true
-            }
-            Msg::UploadImage(image) => {
-                let link = ctx.link().clone();
-                wasm_bindgen_futures::spawn_local(async move {
-                    let response = Request::post("http://127.0.0.1:8000/upload/")
-                        .json(&image) // Send image metadata
-                        .unwrap()
-                        .send()
-                        .await;
-
-                    match response {
-                        Ok(_) => link.send_message(Msg::ImageUploaded(Ok("Image uploaded successfully!".to_string()))),
-                        Err(err) => link.send_message(Msg::ImageUploaded(Err(err.to_string()))),
-                    }
-                });
-                false
-            }
-            Msg::ImageUploaded(Ok(message)) => {
-                gloo::console::log!(message); // Log success message
-                true
-            }
-            Msg::ImageUploaded(Err(err)) => {
-                gloo::console::log!("Failed to upload image:", err); // Log error message
-                false
             }
         }
     }
