@@ -94,6 +94,8 @@ async fn upload_image(mut payload: Multipart) -> Result<HttpResponse> {
             path: file.clone(),
         };
 
+        println!("The image you are trying to upload is :{:?}",image);
+
         match save_image(&image, &db).await {
             Ok(_) => println!("Image metadata saved to MongoDB."),
             Err(e) => {

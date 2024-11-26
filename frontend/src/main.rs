@@ -1,11 +1,13 @@
+
 use gloo::net::http::Request;
-use gloo_file::callbacks::FileReader;
+use gloo_file::{callbacks::FileReader, Blob};
 use gloo_file::File;
 // use gloo_net::http::{Request, Response};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::JsCast;
-use web_sys::HtmlInputElement;
+use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
+use web_sys::{Event, HtmlInputElement, File as WsFile, FormData};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 struct Image {
@@ -22,20 +24,23 @@ struct ClassificationResult {
 }
 
 enum Msg {
-    FileSelected(File),
+    ClassifyFileSelected(File),
+    FileSelected(WsFile),
+    UploadFile,
     FileUploaded(Result<String, String>),
     ImagesLoaded(Result<Vec<Image>, String>),
     ClassificationLoaded(Result<ClassificationResult, String>),
     LoadImages,
     Classify(String),
-    UploadImage(Image),
+    UploadImage(WsFile),
     ImageUploaded(Result<String, String>),
 }
 
 struct App {
-    file_reader: Option<FileReader>,
+    file_reader: Option<gloo_file::callbacks::FileReader>,
     images: Vec<Image>,
     classification_result: Option<ClassificationResult>,
+    selected_file: Option<WsFile>
 }
 
 impl Component for App {
@@ -47,30 +52,79 @@ impl Component for App {
             file_reader: None,
             images: vec![],
             classification_result: None,
+            selected_file : None,
         }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+
         match msg {
-            Msg::FileSelected(file) => {
-                let file_name = file.name().clone();
+            Msg::ClassifyFileSelected(file)=>{
                 let link = ctx.link().clone();
 
-                let reader = gloo_file::callbacks::read_as_bytes(&file, move |file_result| {
+                let gloo_file = gloo_file::File::from(file.clone());
+                
+                let reader = gloo_file::callbacks::read_as_bytes(&gloo_file, move |file_result| {
                     let result = file_result.map(|_| "File read successfully".to_string())
                                              .map_err(|err| err.to_string());
                     link.send_message(Msg::FileUploaded(result));
+                    gloo::console::log!("File being tried to upload {}", file.clone().name());
                 });
+
                 self.file_reader = Some(reader);
                 true
             }
+
+            Msg::FileSelected(file) => {
+                // let file_name = file.name().clone();
+                self.selected_file = Some(file.clone());
+                gloo::console::log!("File selected: {}", file.name());
+                true
+            }
+            Msg::UploadFile => {
+                if let Some(file) = self.selected_file.clone() {
+                    let link = ctx.link().clone();
+                    wasm_bindgen_futures::spawn_local(async move {
+                        let url = "http://127.0.0.1:8000/upload";
+                        let form_data = web_sys::FormData::new().expect("Failed to create FormData");
+                        form_data
+                            .append_with_blob_and_filename("file", &file, &file.name())
+                            .expect("Failed to append file");
+            
+                        // Do not set the Content-Type header; let the browser handle it
+                        let request = gloo_net::http::Request::post(&url)
+                            .body(form_data)
+                            .expect("Failed to build request");
+            
+                        match request.send().await {
+                            Ok(response) => {
+                                if response.ok() {
+                                    let text = response.text().await.unwrap_or_default();
+                                    link.send_message(Msg::FileUploaded(Ok(text)));
+                                } else {
+                                    let status = response.status();
+                                    let error_msg = format!("Failed with status: {}", status);
+                                    link.send_message(Msg::FileUploaded(Err(error_msg)));
+                                }
+                            }
+                            Err(error) => {
+                                let error_msg = format!("Request error: {:?}", error);
+                                link.send_message(Msg::FileUploaded(Err(error_msg)));
+                            }
+                        }
+                    });
+                } else {
+                    gloo::console::log!("No file selected for upload.");
+                }
+                false
+            }
             Msg::FileUploaded(Ok(message)) => {
-                gloo::console::log!("File uploaded:", message);
+                gloo::console::log!("File uploaded successfully: {}", message);
                 ctx.link().send_message(Msg::LoadImages);
                 true
             }
             Msg::FileUploaded(Err(err)) => {
-                gloo::console::log!("File upload failed:", err);
+                gloo::console::log!("File upload failed: {} ", err);
                 false
             }
             Msg::ImagesLoaded(Ok(images)) => {
@@ -78,10 +132,13 @@ impl Component for App {
                 true
             }
             Msg::ImagesLoaded(Err(err)) => {
-                gloo::console::log!("Failed to load images:", err);
+                gloo::console::log!("Failed to load images: {} ", err);
                 false
             }
             Msg::Classify(file_path) => {
+                // let file = self.selected_file.clone().unwrap();
+
+
                 let url = format!("http://127.0.0.1:8000/classify/{}", file_path);
                 let link = ctx.link().clone();
                 wasm_bindgen_futures::spawn_local(async move {
@@ -118,18 +175,36 @@ impl Component for App {
                 });
                 true
             }
-            Msg::UploadImage(image) => {
-                let link = ctx.link().clone();
-                wasm_bindgen_futures::spawn_local(async move {
-                    let response = Request::post("http://127.0.0.1:8000/upload/")
-                        .json(&image) // Send image metadata
-                        .unwrap()
-                        .send()
-                        .await;
 
-                    match response {
-                        Ok(_) => link.send_message(Msg::ImageUploaded(Ok("Image uploaded successfully!".to_string()))),
-                        Err(err) => link.send_message(Msg::ImageUploaded(Err(err.to_string()))),
+            Msg::UploadImage(file) => {
+                let link = ctx.link().clone();
+                spawn_local(async move {
+                    let url = "http://127.0.0.1:8000/upload";
+                    let form_data = FormData::new().expect("Failed to create FormData");
+                    form_data
+                        .append_with_blob_and_filename("file", &file, &file.name())
+                        .expect("Failed to append file");
+            
+                    // Do not set Content-Type header; let the browser handle it
+                    let request = Request::post(&url)
+                        .body(form_data)
+                        .expect("Failed to build request");
+            
+                    match request.send().await {
+                        Ok(response) => {
+                            if response.ok() {
+                                let text = response.text().await.unwrap_or_default();
+                                link.send_message(Msg::ImageUploaded(Ok(text)));
+                            } else {
+                                let status = response.status();
+                                let error_msg = format!("Failed with status: {}", status);
+                                link.send_message(Msg::ImageUploaded(Err(error_msg)));
+                            }
+                        }
+                        Err(error) => {
+                            let error_msg = format!("Request error: {:?}", error);
+                            link.send_message(Msg::ImageUploaded(Err(error_msg)));
+                        }
                     }
                 });
                 false
@@ -144,51 +219,43 @@ impl Component for App {
             }
         }
     }
-
     fn view(&self, ctx: &Context<Self>) -> Html {
         html! {
             <div>
-                <h1>{ "Rust Classy - Image Upload and Classification" }</h1>
-
-                <input type="file" onchange={ctx.link().callback(|e: Event| {
-                    let input = e.target().unwrap().unchecked_into::<HtmlInputElement>();
-                    let file = input.files().unwrap().get(0).unwrap();
-                    let file = File::from(file);
-                    Msg::FileSelected(file)
+                <input type="file" accept="image/*" onchange={ctx.link().callback(|e: web_sys::Event| {
+                    let input: web_sys::HtmlInputElement = e.target_unchecked_into();
+                    let file = input.files().and_then(|files| files.get(0));
+                    Msg::FileSelected(file.unwrap())
                 })} />
+                <button onclick={ctx.link().callback(|_| Msg::UploadFile)}>
+                    { "Upload Image" }
+                </button>
 
-                <button onclick={ctx.link().callback(|_| Msg::LoadImages)}>{ "Load Images" }</button>
+                // <button onclick={ctx.link().callback(|_| Msg::Classify(""))}>
+            //     { "Upload Image" }
+            // // </button>
 
-                <h2>{ "Uploaded Images" }</h2>
-                <ul>
-                    { for self.images.iter().map(|image| {
-                        let file_path = image.path.clone();
-                        html! {
-                            <li>
-                                { format!("ID: {} Name: {}", image.id, image.name) }
-                                <button onclick={ctx.link().callback(move |_| Msg::Classify(file_path.clone()))}>
-                                    { "Classify" }
-                                </button>
-                            </li>
+                <div>
+                    {
+                        if let Some(result) = &self.classification_result {
+                            html! {
+                                
+                                <div>
+                                    <h2>{ "Classification Result" }</h2>
+                                    <p>{ format!("Label: {} Confidence: {:.2}%", result.label, result.confidence * 100.0) }</p>
+                                </div>
+                            }  
+                        }else{
+                            html! { <p>{ "No classification result yet." }</p> }
                         }
-                    })}
-                </ul>
-
-                {
-                    if let Some(result) = &self.classification_result {
-                        html! {
-                            <div>
-                                <h2>{ "Classification Result" }</h2>
-                                <p>{ format!("Label: {} Confidence: {:.2}%", result.label, result.confidence * 100.0) }</p>
-                            </div>
-                        }
-                    } else {
-                        html! { <p>{ "No classification result yet." }</p> }
                     }
-                }
+
+                </div>
+
             </div>
         }
     }
+
 }
 
 
