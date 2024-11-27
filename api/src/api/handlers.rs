@@ -1,6 +1,7 @@
 use super::db::connect_db;
 use actix_files::NamedFile;
 use actix_multipart::Multipart;
+use super::model;
 use actix_web::{
     get, post,
     web::{self, Json, ServiceConfig},
@@ -150,9 +151,16 @@ async fn classify_image(req:HttpRequest) -> impl Responder {
         path:file_path.clone(),
     };
 
+    let output_path = format!("./uploads/{}", file_name.to_str().unwrap());
+    let input_path = format!("./uploads/{}", file_name.to_str().unwrap());
+
+    println!("");
+    println!("========================================");
+    if let Err(e) = model::classify(&input_path, &output_path) { //call the classify function from the model module
+        eprintln!("Error: {}", e);
+    }
 
 
-    
     println!("");
     println!("========================================");
     println!("Classified {:?}",file_name);
