@@ -127,6 +127,7 @@ async fn upload_image(mut payload: Multipart) -> Result<HttpResponse> {
 #[get("/view/{filename}")]
 async fn view_file(req: HttpRequest) -> impl Responder {
     let folder = "./uploads";
+
     let file_name: PathBuf = req.match_info().query("filename").parse().unwrap();
     let file_path = PathBuf::from(folder).join(file_name);
 
@@ -139,9 +140,9 @@ async fn view_file(req: HttpRequest) -> impl Responder {
 
 #[get("/classify/{file_path}")]
 async fn classify_image(req:HttpRequest) -> impl Responder {
-    let folder = "./uploads";
+    let root = "http://127.0.0.1:8000/view/";
     let file_name:PathBuf = req.match_info().query("file_path").parse().unwrap();
-    let file_path = PathBuf::from(folder).join(file_name);
+    let file_path = PathBuf::from(root).join(file_name.clone());
 
     let result = ClassificationResult {
         label: "example_label".to_string(),
@@ -149,8 +150,14 @@ async fn classify_image(req:HttpRequest) -> impl Responder {
         path:file_path.clone(),
     };
 
-    println!("Classified {:?}",file_path.clone());
 
+
+    
+    println!("");
+    println!("========================================");
+    println!("Classified {:?}",file_name);
+    println!("");
+    println!("========================================");
     HttpResponse::Ok().json(result)
 }
 

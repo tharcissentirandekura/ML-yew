@@ -122,8 +122,8 @@ impl Component for App {
             Msg::Classify => {
                 // let file = self.selected_file.clone().unwrap();
                 let file = self.selected_file.clone().unwrap();
-                let convert_file = File::from(file);
-                let url = format!("http://127.0.0.1:8000/classify/{:?}", convert_file);
+                let convert_file = file.name();
+                let url = format!("http://127.0.0.1:8000/classify/{}", convert_file);
                 let link = ctx.link().clone();
                 wasm_bindgen_futures::spawn_local(async move {
                     let response = Request::get(&url).send().await;
@@ -212,6 +212,7 @@ impl Component for App {
                                 
                                 <div>
                                     <h2>{ "Classification Result" }</h2>
+                                    <img src={result.path.clone()}/>
                                     <p>{ format!("Label: {} Confidence: {:.2}% View file : {}", result.label, result.confidence * 100.0,result.path) }</p>
                                 </div>
                             }  
