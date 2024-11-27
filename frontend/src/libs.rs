@@ -21,10 +21,10 @@ struct ClassificationResult {
 }
 
 enum Msg {
-    FileSelected(File),
-    FileUploaded(Result<String, String>),
-    ImagesLoaded(Result<Vec<Image>, String>),
-    ClassificationLoaded(Result<ClassificationResult, String>),
+    FileSelected(File), // hold a file from input
+    FileUploaded(Result<String, String>), // to return response message
+    ImagesLoaded(Result<Vec<Image>, String>), // holds an image from file input
+    ClassificationLoaded(Result<ClassificationResult, String>), // holds classification data
     LoadImages,
     Classify(String),
 }
@@ -54,6 +54,9 @@ impl Component for App {
                 let reader = {
                     let link = ctx.link().clone();
                     FileReader::new(file, move |file_result| {
+                        let result = file_result.map(|_| "File read successfully".to_string())
+                        .map_err(|err| err.to_string());
+                        link.send_message(Msg::FileUploaded(result));
                         let result = file_result.map(|data| {
                             // Create form data
                             let mut form = FormData::new().unwrap();
@@ -175,6 +178,6 @@ impl Component for App {
 }
 
 
-fn main() {
+fn run_app() {
     yew::Renderer::<App>::new().render();
 }

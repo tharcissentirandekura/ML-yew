@@ -51,10 +51,25 @@ pub async fn get_image() -> impl Responder {
     HttpResponse::Ok().json(images)
 }
 
-// update in the future, instead of posting the image data, we will replace the existing image with a new one to avoid storing images that users delete for each classification.
 async fn save_image(image: &Image, db: &Database) -> mongodb::error::Result<()> {
     let collection: Collection<Image> = db.collection("images");
-    collection.insert_one(image).await?;
+    let filter = doc! {"id":1};
+    
+    let cursor = collection.find(filter.clone()).await.unwrap();
+    let images: Vec<Image> = cursor.try_collect().await.unwrap();
+
+    if images.is_empty(){
+        collection.insert_one(image).await?;
+    }else{
+        let update = doc! {
+            "$set": {
+                "name": &image.name,
+                "path": &image.path,
+            }
+        };
+        collection.update_one(filter.clone(), update).await?;
+    }
+
     Ok(())
 }
 
