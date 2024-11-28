@@ -1,0 +1,2 @@
+[build]
+target = "index.html" # Name of the package to build

@@ -1,0 +1,4 @@
+- How to configure teh backend 
+- https://www.red-gate.com/simple-talk/development/web/building-restful-apis-in-rust-with-actix-and-diesel/
+- That involve creating the routes for rest api
+- 
