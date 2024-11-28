@@ -1,11 +1,11 @@
 
 use gloo::net::http::Request;
 // use gloo_file::callbacks::FileReader;
-use gloo_file::File;
+// use gloo_file::File;
 // use gloo_net::http::{Request, Response};
 use serde::{Deserialize, Serialize};
 use yew::prelude::*;
-use web_sys::{File as WsFile, FormData};
+use web_sys::File as WsFile;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 struct Image {
@@ -37,7 +37,8 @@ struct App {
     // file_reader: Option<gloo_file::callbacks::FileReader>,
     images: Vec<Image>,
     classification_result: Option<ClassificationResult>,
-    selected_file: Option<WsFile>
+    selected_file: Option<WsFile>,
+    loading: bool,
 }
 
 impl Component for App {
@@ -50,6 +51,7 @@ impl Component for App {
             images: vec![],
             classification_result: None,
             selected_file : None,
+            loading: false,
         }
     }
 
@@ -65,6 +67,7 @@ impl Component for App {
             //this is workin file and it is able to send an image to db/backend
             Msg::UploadFile => {
                 if let Some(file) = self.selected_file.clone() {
+                    self.loading = true;
                     let link = ctx.link().clone();
                     wasm_bindgen_futures::spawn_local(async move {
                         let url = "http://127.0.0.1:8000/upload";
@@ -94,6 +97,8 @@ impl Component for App {
                                 link.send_message(Msg::FileUploaded(Err(error_msg)));
                             }
                         }
+                        // self.loading = false;
+                        
                     });
                 } else {
                     gloo::console::log!("No file selected for upload.");
@@ -105,10 +110,12 @@ impl Component for App {
             Msg::FileUploaded(Ok(message)) => {
                 gloo::console::log!("File uploaded successfully: {}", message);
                 ctx.link().send_message(Msg::LoadImages);
+                self.loading = false;
                 true
             }
             Msg::FileUploaded(Err(err)) => {
                 gloo::console::log!("File upload failed: {} ", err);
+                self.loading = false;
                 false
             }
             Msg::ImagesLoaded(Ok(images)) => {
@@ -148,7 +155,7 @@ impl Component for App {
             Msg::LoadImages => {
                 let link = ctx.link().clone();
                 wasm_bindgen_futures::spawn_local(async move {
-                    let response = Request::get("http://127.0.0.1:8000/image").send().await;
+                    let response = Request::get("http://127.0.0.1:800/image").send().await;
                     match response {
                         Ok(res) => {
                             let images: Result<Vec<Image>, String> = res.json().await.map_err(|e| e.to_string());
@@ -172,17 +179,17 @@ impl Component for App {
     }
     fn view(&self, ctx: &Context<Self>) -> Html {
         html! {
-            <div>
-                <main class="grid min-h-full place-items-center bg-white px-6 py-24 sm:py-32 lg:px-8">
+            <div class="grid min-h-full place-items-center bg-gray-900 px-6 sm:py-32 lg:px-8 txt-gray-300">
+                <main class=" grid min-h-full place-items-center bg-gray-900 px-6 sm:py-3 lg:px-8">
                     <div class="text-center">
-                        <h1 class="mt-4 text-balance text-5xl font-semibold tracking-tight text-red-600 sm:text-7xl">{"ClassiRust"}</h1>
-                        <p class="mt-6 py-5 text-pretty text-lg font-medium text-gray-500 sm:text-xl/8">{"Classify your Image with confidence using Machine Learning."}</p>
+                        <h1 class="text-balance text-5xl font-semibold tracking-tight text-red-600 sm:text-7xl">{"ClassiRust"}</h1>
+                        <p class="py-5 text-pretty text-lg font-medium text-gray-500 sm:text-xl/8">{"Classify your Image with confidence using Machine Learning."}</p>
                         
-                        <label class="flex flex-col items-center py-7 text-blue rounded-lg shadow-lg tracking-wide uppercase border cursor-pointer border-red bg-gray-100 hover:bg-indigo-500 hover:text-white">
-                            <svg class="w-8 h-8" fill="blue" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                        <label class="flex flex-col items-center py-2 text-red-600 rounded-lg shadow-lg tracking-wide uppercase border cursor-pointer border-gray-600 bg-gray-800 hover:bg-black hover:text-white">
+                            <svg class="w-10 h-8" fill="white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
                                 <path d="M16.88 9.94l-4.88-4.88v3.94h-4v-3.94l-4.88 4.88 1.41 1.41 3.47-3.47v3.94h4v-3.94l3.47 3.47 1.41-1.41z"/>
                             </svg>
-                            <span class="mt-2 text-2xl font-semibold leading-normal">{"Select a file"}</span>
+                            <span class="mt-1 text-xl font-semibold leading-normal">{"Select a file"}</span>
                             <input type="file" accept="image/*" class="hidden" onchange={ctx.link().callback(|e: web_sys::Event| {
                                 let input: web_sys::HtmlInputElement = e.target_unchecked_into();
                                 let file = input.files().and_then(|files| files.get(0));
@@ -190,34 +197,43 @@ impl Component for App {
                             })} />
                         </label>
 
-                    
+                        <div id="loading" class="loading">
+                            { if self.loading {
+                                html! { <div class="loader">{"Loading..."}</div> }
+                            } else {
+                                html! {}
+                            }}
+                        </div> 
                         <div class="mt-10 flex items-center justify-center gap-x-6">
                             <button onclick={ctx.link().callback(|_| Msg::UploadFile)} class="mt-2 rounded-md bg-red-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600">
                             { "Upload Image" }
                         </button>
 
                         <button onclick={ctx.link().callback(|_| Msg::Classify)} class="mt-2 rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
-                            { "Classify" }
+                            { "Classify Image" }
                         </button>
-                            <a href="#" class="text-2xl font-semibold text-gray-900">{"Send feedback.. "}<span aria-hidden="true"></span></a>
                         </div>
                     </div>
 
                 </main>
                 <div>
-        
                     {   
                         if let Some(result) = &self.classification_result {
                             html! {
-                                
-                                <div>
-                                    <h2>{ "Classification Result" }</h2>
-                                    <img src={result.path.clone()}/>
-                                    <p>{ format!("Label: {} Confidence: {:.2}% View file : {}", result.label, result.confidence * 100.0,result.path) }</p>
+                                <div class="mt-10 p-4 mb-4 border border-gray-300 border-dashed rounded-lg shadow-md bg-gray-800">
+                                    <h2 class="text-xl font-semibold text-gray-200 mb-2">{ "Classification Result" }</h2>
+                                    <img class="w-100 h-auto mb-2 rounded" src={result.path.clone()} alt="Classified Image"/>
+                                    <div class="text-gray-700">
+                                        <ul class="list-disc pl-5 text-gray-200">
+                                            <li><strong>{"Label:"}</strong> { &result.label }</li>
+                                            <li><strong>{"Confidence:"}</strong> { format!("{:.2}%", result.confidence * 100.0) }</li>
+                                            <li><strong>{"View file:"}</strong> <a href={result.path.clone()} class="text-blue-500 hover:underline">{ &result.path }</a></li>
+                                        </ul>
+                                    </div> 
                                 </div>
-                            }  
+                            }
                         }else{
-                            html! { <p>{ "No classification result yet." }</p> }
+                            html! { <p class="text-gray-600">{ "No classification result yet." }</p> }
                         }
                     }
 

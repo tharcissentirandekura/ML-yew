@@ -103,7 +103,7 @@ pub fn classify(input_image: &str, output_image: &str) -> PyResult<()> {
         
 
         let detect_and_draw = python_code.getattr("detect_and_draw")?;
-        println!("Python function 'detect_and_draw' retrieved successfully.");
+        println!("Python function 'detect_and_draw' retrieved successfully.{}",detect_and_draw);
 
 
         // Call the function with Rust tuple of positional arguments
