@@ -52,7 +52,7 @@ pub fn classify(input_image: &str, output_image: &str) -> PyResult<()> {
             88: 'teddy bear', 89: 'hair drier', 90: 'toothbrush'
         }   
         
-            model_path = '/Users/tharack/Desktop/Final/api/src/api/model/frozen_inference_graph.pb'
+            model_path = '../model/frozen_inference_graph.pb'
             print('....................')
             print('Loading model...', model_path)
             print('....................')
