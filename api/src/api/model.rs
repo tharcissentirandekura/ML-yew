@@ -52,7 +52,10 @@ pub fn classify(input_image: &str, output_image: &str) -> PyResult<()> {
             88: 'teddy bear', 89: 'hair drier', 90: 'toothbrush'
         }   
         
-            model_path = '/zfs/2021/rshahjah/cs241/final_project/faster_rcnn_nas_coco_2018_01_28/frozen_inference_graph.pb'
+            model_path = '/Users/tharack/Desktop/Final/api/src/api/model/frozen_inference_graph.pb'
+            print('....................')
+            print('Loading model...', model_path)
+            print('....................')
             detection_graph = tf.Graph()
             with detection_graph.as_default():
                 od_graph_def = tf.compat.v1.GraphDef()
@@ -91,9 +94,15 @@ pub fn classify(input_image: &str, output_image: &str) -> PyResult<()> {
                             class_name = class_names.get(classes[i], 'Unknown')
                             cv2.rectangle(image_np, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
                             label = f'{class_name}: {scores[i]:.2f}'
+                            font_scale = 0.5
+                            font_thickness = 1
+                            text_size, _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, font_scale, font_thickness)
+                            text_width, text_height = text_size
+                            label_background_color = (0, 255, 0)
+                            cv2.rectangle(image_np, (x_min, y_min - text_height-10), (x_min + text_width, y_min), label_background_color, -1)
+                            text_color = (0,0,0)
                             cv2.putText(image_np, label, (x_min, y_min - 10),
-                                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
-        
+                                cv2.FONT_HERSHEY_SIMPLEX, font_scale, text_color, font_thickness)
                     cv2.imwrite(output_image_path, image_np)
                     return output_image_path"),
                     c_str!(""),
@@ -124,8 +133,8 @@ pub fn classify(input_image: &str, output_image: &str) -> PyResult<()> {
 }
 
 fn main() {
-    let input_path = "/zfs/2021/rshahjah/cs241/final_project/241-group-project-reefayat-jesse-kelig-tharcisse/image_classifier/test.png";
-    let output_path = "/zfs/2021/rshahjah/cs241/final_project/241-group-project-reefayat-jesse-kelig-tharcisse/image_classifier/test_thresh.jpg";
+    let input_path = "./model/download.jpeg";
+    let output_path = "./model/output.jpeg";
 
     if let Err(e) = adaptive_threshold(input_path, output_path) {
         eprintln!("Error: {}", e);

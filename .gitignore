@@ -2,5 +2,6 @@
 
 uploads/* 
 !uploads/.gitignore
-model/*
-
+model/
+models/*
+.python-version

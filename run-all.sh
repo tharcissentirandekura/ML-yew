@@ -21,4 +21,4 @@ echo "Frontend running on http://127.0.0.1:8080"
 trap "kill $API_PID $FRONTEND_PID" EXIT
 
 # Wait for both processes
-wait $API_PID $FRONTEND_PID
+# wait $API_PID $FRONTEND_PID
