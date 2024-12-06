@@ -3,35 +3,21 @@ use pyo3::prelude::*;
 use pyo3::types::PyModule;
 use pyo3::ffi::c_str;
 
-pub fn adaptive_threshold(input_path: &str, output_path: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let img = open(input_path)?.to_luma8();
-    let mut output = GrayImage::new(img.width(), img.height());
-
-    for y in 0..img.height() {
-        for x in 0..img.width() {
-            let pixel = img.get_pixel(x, y);
-            let threshold = 128; // Replace with actual adaptive calculation
-            let value = if pixel[0] > threshold { 255 } else { 0 };
-            output.put_pixel(x, y, Luma([value]));
-        }
-    }
-
-    output.save(output_path)?;
-    Ok(())
-}
-
-pub fn classify(input_image: &str, output_image: &str) -> PyResult<()> {
+pub fn classify(input_image: &str, output_image: &str,labels:&str) -> PyResult<()> {
 
     pyo3::prepare_freethreaded_python();
     let _ = Python::with_gil(|py| -> PyResult<()> {
         // Define the Python script as a string
         let python_code = PyModule::from_code(
             py,
-            c_str!("def detect_and_draw(input_image_path, output_image_path):
+            c_str!("def detect_and_draw(input_image_path, output_image_path, labels):
             import cv2
             import numpy as np
             import tensorflow as tf
-        
+
+            print('....................')
+            print(f'labels  {labels}')
+            filtered_class_names = {}
             class_names = {
             1: 'person', 2: 'bicycle', 3: 'car', 4: 'motorcycle', 5: 'airplane',
             6: 'bus', 7: 'train', 8: 'truck', 9: 'boat', 10: 'traffic light',
@@ -49,8 +35,15 @@ pub fn classify(input_image: &str, output_image: &str) -> PyResult<()> {
             72: 'tv', 73: 'laptop', 74: 'mouse', 75: 'remote', 76: 'keyboard',
             77: 'cell phone', 78: 'microwave', 79: 'oven', 80: 'toaster', 81: 'sink',
             82: 'refrigerator', 84: 'book', 85: 'clock', 86: 'vase', 87: 'scissors',
-            88: 'teddy bear', 89: 'hair drier', 90: 'toothbrush'
-        }   
+            88: 'teddy bear', 89: 'hair drier', 90: 'toothbrush'   
+            }
+            
+            if labels != 'None':
+                sub_labels = labels.split(',')
+                for key, value in class_names.items():
+                    if value in sub_labels:
+                        filtered_class_names[key] = value
+
         
             model_path = '../model/frozen_inference_graph.pb'
             print('....................')
@@ -91,7 +84,12 @@ pub fn classify(input_image: &str, output_image: &str) -> PyResult<()> {
                             y_min, x_min, y_max, x_max = boxes[i]
                             x_min, x_max = int(x_min * width), int(x_max * width)
                             y_min, y_max = int(y_min * height), int(y_max * height)
-                            class_name = class_names.get(classes[i], 'Unknown')
+                            if labels == 'None':
+                                class_name = class_names.get(classes[i], 'Unknown')
+                            else:
+                                class_name = filtered_class_names.get(classes[i], 'Unknown')
+                            if class_name == 'Unknown':
+                                continue
                             cv2.rectangle(image_np, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
                             label = f'{class_name}: {scores[i]:.2f}'
                             font_scale = 0.5
@@ -116,7 +114,7 @@ pub fn classify(input_image: &str, output_image: &str) -> PyResult<()> {
 
 
         // Call the function with Rust tuple of positional arguments
-        let args = (input_image, output_image);
+        let args = (input_image, output_image, labels);
         
         let result = detect_and_draw.call1(args);
         
@@ -130,15 +128,4 @@ pub fn classify(input_image: &str, output_image: &str) -> PyResult<()> {
     });
 
     Ok(())
-}
-
-fn main() {
-    let input_path = "./model/download.jpeg";
-    let output_path = "./model/output.jpeg";
-
-    if let Err(e) = adaptive_threshold(input_path, output_path) {
-        eprintln!("Error: {}", e);
-    }
-
-    // let _ = classify(input_path, output_path);
 }

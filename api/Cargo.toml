@@ -24,3 +24,4 @@ gloo-file = "0.3.0"
 actix-cors = "0.7.0"
 image = "0.25.5"
 pyo3 = "0.23.2"
+

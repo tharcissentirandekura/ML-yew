@@ -3,37 +3,21 @@ use actix_files::NamedFile;
 use actix_multipart::Multipart;
 use super::model;
 use actix_web::{
-    get, post,
-    web::{self, Json, ServiceConfig},
-    HttpRequest, HttpResponse, Responder, Result,
+    get, post, web::{self, Json, ServiceConfig}, Error, HttpRequest, HttpResponse, Responder, Result
 };
 use futures_util::{stream::StreamExt, TryStreamExt};
 use mongodb::{bson::doc, Collection, Database};
 use sanitize_filename;
-use serde::{Deserialize, Serialize};
+// use serde::{Deserialize, Serialize};
 use std::io::Write;
 use std::path::PathBuf;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Image {
-    pub id: i32,
-    pub name: String,
-    pub path: String, // path to the image file on the file system
-}
 
-#[derive(Serialize)]
-struct ClassificationResult {
-    label: String,
-    confidence: f32,
-    path : PathBuf
-}
 
-#[derive(Deserialize)]
-pub struct UploadImage {
-    pub name: String,
-    pub data: Vec<u8>,
-}
+use super::types::{ClassificationResult, Image, UploadImage}; //import the types module with structs for image and classification result, and upload image
+
+
 #[get("/")]
 pub async fn home() -> impl Responder {
     HttpResponse::Ok().json("you are viewing the home for rustclassy website ML model")
@@ -139,10 +123,11 @@ async fn view_file(req: HttpRequest) -> impl Responder {
     }
 }
 
-#[get("/classify/{file_path}")]
+#[get("/classify/{file_path}/{labels}")]
 async fn classify_image(req:HttpRequest) -> impl Responder {
     let root = "http://127.0.0.1:8000/view/";
     let file_name:PathBuf = req.match_info().query("file_path").parse().unwrap();
+    let labels: String = req.match_info().query("labels").parse().unwrap();
     let file_path = PathBuf::from(root).join(file_name.clone());
 
     let result = ClassificationResult {
@@ -156,11 +141,10 @@ async fn classify_image(req:HttpRequest) -> impl Responder {
 
     println!("");
     println!("========================================");
-    if let Err(e) = model::classify(&input_path, &output_path) { //call the classify function from the model module
+    if let Err(e) = model::classify(&input_path, &output_path,&labels) { //call the classify function from the model module
         eprintln!("Error: {}", e);
     }
-
-
+    //we can use webscoket to send the classification progress to the frontend and update info, for example loading model, classifying, etc
     println!("");
     println!("========================================");
     println!("Classified {:?}",file_name);
@@ -176,5 +160,5 @@ pub fn init_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(home); //home route
     cfg.service(view_file); //view file route
     cfg.service(classify_image);
-                            //  cfg.route("/upload", web::route().to(upload_image));
+
 }
