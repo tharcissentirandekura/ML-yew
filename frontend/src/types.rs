@@ -13,6 +13,7 @@ pub struct ClassificationResult {
     pub label: String,
     pub confidence: f32,
     pub path: String,
+    //testing
 }
 
 pub enum Msg {
