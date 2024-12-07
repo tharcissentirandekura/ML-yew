@@ -1,9 +1,14 @@
 [build]
-publish = "dist"
+publish = "frontend/dist"
 command = """
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
 source $HOME/.cargo/env && \
 cargo install trunk && \
+# Print current directory for debugging
+pwd && \
+ls -la && \
+# If your Yew project is in a subdirectory (e.g., 'frontend'), add:
+cd frontend && \
 trunk build --release"""
 
 [build.environment]
