@@ -26,3 +26,4 @@ uploads/*
 model/
 models/*
 .python-version
+.venv   

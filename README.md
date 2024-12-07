@@ -118,6 +118,37 @@ We are on track to finish by the due date, although we have been facing our vari
 
 
 
+**How to run the project and all required dependencies**
+
+- Running run-all.sh script should do almost everything unless there is something wrong, I also assumed you are running the project on a macOS computer for installing the python dependencies and mongodb community but if you are on linux:
+
+    -  Check  how to install tensorflow
+    - mongodb community and how to start it
+    - install opencv community
+
+
+- tensorflow
+- opencv-python
+- mongodb database and an accound and create a new database cluster
+
+
+
+
+**Main rust crates we used**
+
+*Api/backend and ML Model*
+- Using actix-web rust framework for api
+- Can be found in api/Cargo.toml
+
+*Frontend*
+- Using frontend rust yew framework 
+- More crates used, can be found in frontend/Cargo.toml
+
+
+
+
+
+
 
 
 
