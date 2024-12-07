@@ -1,2 +1,12 @@
 [build]
-target = "index.html" # Name of the package to build
+    target = "index.html" # Name of the package to build
+    base = "."
+    command = "trunk build --release"
+    publish = "dist"
+    dist = "dist"
+    release = true
+    
+
+[static]
+base = "."
+publish = "index.html"
