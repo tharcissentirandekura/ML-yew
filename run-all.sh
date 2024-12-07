@@ -36,6 +36,13 @@ echo -e "\n<==========Preparing for the project to run================>\n"
 # Run the frontend in the background
 echo -e "\n<==========...Starting the frontend...===============>\n"
 cd frontend || exit
+
+# install trunk if it is not installed
+if ! cargo install trunk; then
+    echo -e "\n<==========Installing trunk...===============>\n"
+    cargo install trunk
+fi
+
 trunk serve &
 FRONTEND_PID=$!
 
