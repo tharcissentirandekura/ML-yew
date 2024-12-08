@@ -1,6 +1,6 @@
 [build]
-target = "static/index.html" # Entry point for the build
-dist = "frontend/dist"       # Output directory for build artifacts
+    target = "index.html" # Entry point for the build
+    dist = "dist"       # Output directory for build artifacts
 
 [static]
 dir = "static"               # Directory for static assets

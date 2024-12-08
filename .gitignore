@@ -27,3 +27,6 @@ model/
 models/*
 .python-version
 .venv   
+
+# Local Netlify folder
+.netlify
