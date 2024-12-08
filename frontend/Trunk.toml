@@ -1,8 +1,6 @@
 [build]
-    target = "index.html" # Name of the package to build
-    base = "."
-    publish = "frontend/dist"
+target = "static/index.html" # Entry point for the build
+dist = "dist"       # Output directory for build artifacts
 
 [static]
-base = "."
-publish = "index.html"
+dir = "static"               # Directory for static assets

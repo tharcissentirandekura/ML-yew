@@ -3,14 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Machine Learning Image Classifier</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"> -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <title>Classirust</title>
+    
 </head>
 <body>
-    <h1>Machine Learning Image Classifier</h1>
-    <div id="app"></div>
+    <div id="root"></div>
     <script type="module">
-        import init, { run_app } from './frontend.js';
-        init().then(run_app);
+        import init from './frontend_bg.wasm'; 
+        init();
     </script>
 </body>
 </html>
